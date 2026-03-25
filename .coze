@@ -1,0 +1,10 @@
+[project]
+requires = ["golang-1.22"]
+
+[dev]
+build = ["go", "mod", "download"]
+run = ["go", "run", "./cmd/gh-repo-visualize"]
+
+[deploy]
+build = ["go", "build", "-o", "bin/gh-repo-visualize", "./cmd/gh-repo-visualize"]
+run = ["./bin/gh-repo-visualize"]
