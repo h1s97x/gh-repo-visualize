@@ -1,0 +1,73 @@
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/urfave/cli/v2"
+
+	"github.com/h1s97x/gh-repo-visualize/internal/git"
+	"github.com/h1s97x/gh-repo-visualize/internal/models"
+	"github.com/h1s97x/gh-repo-visualize/internal/visualize"
+)
+
+// Stats handles the stats command
+func Stats(c *cli.Context) error {
+	// Get flags
+	byAuthor := c.Bool("by-author")
+	byDay := c.Bool("by-day")
+	branch := c.String("branch")
+	author := c.String("author")
+	format := c.String("format")
+
+	// Create git client
+	client := git.NewClient("")
+	
+	// Check if we're in a git repo
+	if !client.IsGitRepo() {
+		return fmt.Errorf("not a git repository. Please run this command from within a git repository")
+	}
+
+	// Get commits
+	opts := &git.LogOptions{
+		Limit:  0, // No limit for stats
+		Branch: branch,
+		Author: author,
+	}
+
+	commits, err := client.GetCommits(opts)
+	if err != nil {
+		return fmt.Errorf("failed to get commits: %w", err)
+	}
+
+	if len(commits) == 0 {
+		fmt.Println("No commits found matching the criteria")
+		return nil
+	}
+
+	// Calculate stats
+	stats := models.NewStats()
+	stats.Calculate(commits)
+
+	// Render output
+	renderer := visualize.NewStatsRenderer()
+
+	if format == "json" {
+		fmt.Println(renderer.RenderJSON(stats))
+		return nil
+	}
+
+	// Default summary
+	fmt.Println(renderer.Render(stats))
+
+	// By author breakdown
+	if byAuthor || (!byAuthor && !byDay) {
+		fmt.Println(renderer.RenderByAuthor(stats))
+	}
+
+	// By day breakdown
+	if byDay || (!byAuthor && !byDay) {
+		fmt.Println(renderer.RenderByDay(stats))
+	}
+
+	return nil
+}
