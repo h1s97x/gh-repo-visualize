@@ -1,0 +1,101 @@
+#!/bin/bash
+# gh-repo-visualize - GitHub CLI extension for visualizing Git commit history
+# This script is used by 'gh extension install' to install the extension
+
+set -e
+
+EXTENSION_NAME="gh-repo-visualize"
+REPO="h1s97x/gh-repo-visualize"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Detect OS and architecture
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+ARCH=$(uname -m)
+
+# Map architecture
+case $ARCH in
+    x86_64|amd64) ARCH="amd64" ;;
+    aarch64|arm64) ARCH="arm64" ;;
+    *)
+        echo "⚠️  Unsupported architecture: $ARCH, building from source..."
+        BUILD_FROM_SOURCE=true
+        ;;
+esac
+
+# Map OS and set binary name
+if [ "$BUILD_FROM_SOURCE" != true ]; then
+    case $OS in
+        darwin)
+            BINARY="${EXTENSION_NAME}-darwin-${ARCH}"
+            ;;
+        linux)
+            BINARY="${EXTENSION_NAME}-linux-${ARCH}"
+            ;;
+        mingw*|msys*|cygwin*|windows*)
+            BINARY="${EXTENSION_NAME}-windows-amd64.exe"
+            ;;
+        *)
+            echo "⚠️  Unsupported OS: $OS, building from source..."
+            BUILD_FROM_SOURCE=true
+            ;;
+    esac
+fi
+
+# Try to download pre-built binary
+if [ "$BUILD_FROM_SOURCE" != true ]; then
+    echo "🔍 Checking for pre-built binary..."
+    
+    # Get latest release
+    LATEST=$(gh api "repos/${REPO}/releases/latest" 2>/dev/null || echo "")
+    
+    if [ -n "$LATEST" ]; then
+        VERSION=$(echo "$LATEST" | grep -m1 '"tag_name"' | cut -d'"' -f4)
+        echo "📦 Found release: $VERSION"
+        
+        DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${BINARY}.tar.gz"
+        
+        if curl -sLf "$DOWNLOAD_URL" -o /dev/null 2>&1; then
+            echo "⬇️  Downloading ${BINARY}..."
+            cd "$SCRIPT_DIR"
+            curl -sL "$DOWNLOAD_URL" | tar -xzf - 2>/dev/null
+            
+            if [ -f "$BINARY" ]; then
+                mv "$BINARY" "$EXTENSION_NAME"
+                chmod +x "$EXTENSION_NAME"
+                echo "✅ Installed ${EXTENSION_NAME} ${VERSION}"
+                exit 0
+            fi
+        fi
+    fi
+    
+    echo "⚠️  Pre-built binary not available, building from source..."
+fi
+
+# Build from source
+echo "🔨 Building from source..."
+
+# Check if Go is installed
+if ! command -v go &> /dev/null; then
+    echo "❌ Error: Go is not installed."
+    echo ""
+    echo "Please install Go from: https://golang.org/doc/install"
+    echo ""
+    echo "Or download a pre-built binary from:"
+    echo "https://github.com/${REPO}/releases"
+    exit 1
+fi
+
+GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
+echo "   Go version: $GO_VERSION"
+
+cd "$SCRIPT_DIR"
+go build -ldflags="-s -w" -o "${EXTENSION_NAME}" ./cmd/gh-repo-visualize
+chmod +x "${EXTENSION_NAME}"
+
+echo "✅ ${EXTENSION_NAME} built successfully!"
+echo ""
+echo "📖 Usage:"
+echo "   gh repo visualize          # Show commit graph"
+echo "   gh repo visualize -n 50    # Show last 50 commits"
+echo "   gh repo visualize stats    # Show commit statistics"
+echo "   gh repo visualize --help   # Show all options"
