@@ -9,77 +9,24 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build and Release
+  goreleaser:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
 
-      - name: Get version
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Build binaries
-        run: |
-          mkdir -p dist
-          
-          # Linux
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.VERSION }}" -o dist/gh-repo-visualize-linux-amd64 ./cmd/gh-repo-visualize
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.VERSION }}" -o dist/gh-repo-visualize-linux-arm64 ./cmd/gh-repo-visualize
-          
-          # macOS
-          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.VERSION }}" -o dist/gh-repo-visualize-darwin-amd64 ./cmd/gh-repo-visualize
-          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.VERSION }}" -o dist/gh-repo-visualize-darwin-arm64 ./cmd/gh-repo-visualize
-          
-          # Windows
-          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.Version=${{ steps.get_version.outputs.VERSION }}" -o dist/gh-repo-visualize-windows-amd64.exe ./cmd/gh-repo-visualize
-          
-          # Create archives
-          cd dist
-          tar -czvf gh-repo-visualize-linux-amd64.tar.gz gh-repo-visualize-linux-amd64
-          tar -czvf gh-repo-visualize-linux-arm64.tar.gz gh-repo-visualize-linux-arm64
-          tar -czvf gh-repo-visualize-darwin-amd64.tar.gz gh-repo-visualize-darwin-amd64
-          tar -czvf gh-repo-visualize-darwin-arm64.tar.gz gh-repo-visualize-darwin-arm64
-          zip gh-repo-visualize-windows-amd64.zip gh-repo-visualize-windows-amd64.exe
-
-      - name: Generate checksums
-        run: |
-          cd dist
-          sha256sum *.tar.gz *.zip > checksums.txt
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          files: dist/*
-          generate_release_notes: true
-          body: |
-            ## Installation
-            
-            ### Using gh CLI extension
-            
-            ```bash
-            gh extension install h1s97x/gh-repo-visualize
-            ```
-            
-            ### Manual installation
-            
-            Download the binary for your platform from the assets below.
-            
-            | Platform | Architecture | File |
-            |----------|-------------|------|
-            | Linux | amd64 | `gh-repo-visualize-linux-amd64.tar.gz` |
-            | Linux | arm64 | `gh-repo-visualize-linux-arm64.tar.gz` |
-            | macOS | amd64 | `gh-repo-visualize-darwin-amd64.tar.gz` |
-            | macOS | arm64 | `gh-repo-visualize-darwin-arm64.tar.gz` |
-            | Windows | amd64 | `gh-repo-visualize-windows-amd64.zip` |
-            
-            ### Verify checksums
-            
-            See `checksums.txt` for SHA256 checksums of all binaries.
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_GITHUB_TOKEN }}

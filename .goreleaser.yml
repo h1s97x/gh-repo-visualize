@@ -1,26 +1,32 @@
+# GoReleaser configuration
+# https://goreleaser.com
+
 before:
   hooks:
     - go mod tidy
+    - go generate ./...
 
 builds:
-  - id: "gh-repo-visualize"
-    env:
+  - env:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
+      - windows
     goarch:
       - amd64
       - arm64
-    main: ./cmd/gh-repo-visualize/main.go 
+    ignore:
+      - goos: windows
+        goarch: arm64
+    main: ./cmd/gh-repo-visualize
     binary: gh-repo-visualize
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.BuildDate={{.Date}} -X main.BuildCommit={{.Commit}}
 
 archives:
   - format: tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
     format_overrides:
       - goos: windows
         format: zip
@@ -41,13 +47,21 @@ release:
   github:
     owner: h1s97x
     name: gh-repo-visualize
+  footer: |
+    ## Installation
+    
+    ```bash
+    gh extension install h1s97x/gh-repo-visualize
+    ```
+    
+    **Full Changelog**: https://github.com/h1s97x/gh-repo-visualize/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-brews:
-  - name: gh-repo-visualize
-    homepage: "https://github.com/h1s97x/gh-repo-visualize"
-    description: "A GitHub CLI extension for visualizing Git commit history"
-    repository:
-      owner: h1s97x
-      name: homebrew-tap
-    install: |
-      bin.install "gh-repo-visualize"
+# brews:
+#   - name: gh-repo-visualize
+#     homepage: "https://github.com/h1s97x/gh-repo-visualize"
+#     description: "A GitHub CLI extension for visualizing Git commit history"
+#     repository:
+#       owner: h1s97x
+#       name: homebrew-tap
+#     install: |
+#       bin.install "gh-repo-visualize"
