@@ -17,6 +17,10 @@
 
 - 📊 **Commit Graph Visualization** - Display Git commit history as ASCII art
 - 📈 **Commit Statistics** - Analyze commit patterns by author, day, and time
+- 🌳 **Branch Graph Visualization** - Visualize branch structure and relationships
+- 👥 **Contributor Leaderboard** - Rank contributors by commit count
+- 📅 **Date Range Filtering** - Filter commits by date with --since/--until flags
+- 📤 **Export Formats** - Export data as CSV, Markdown, or HTML
 - 🎨 **Terminal Colors** - Rich color output with multiple color schemes
 - 🔍 **Flexible Filtering** - Filter by branch, author, or limit count (case-insensitive)
 - ⚡ **Fast and Lightweight** - Pure Go implementation
@@ -90,6 +94,71 @@ gh repo visualize stats --color     # Force enable colors
 gh repo visualize stats --no-color  # Disable colors
 ```
 
+### Show Branch Graph
+
+```bash
+# Display branch visualization
+gh repo visualize branch
+
+# Show local and remote branches
+gh repo visualize branch --all
+
+# Show branch with merged status
+gh repo visualize branch --merged
+
+# Show unmerged branches only
+gh repo visualize branch --unmerged
+
+# Output as JSON
+gh repo visualize branch -f json
+```
+
+### Show Contributor Leaderboard
+
+```bash
+# Display top 10 contributors
+gh repo visualize leaderboard
+
+# Show top 5 contributors
+gh repo visualize leaderboard -n 5
+
+# Use alias
+gh repo visualize top -n 20
+
+# Output as JSON
+gh repo visualize leaderboard -f json
+```
+
+### Date Range Filtering
+
+```bash
+# Filter commits since a specific date
+gh repo visualize --since "2024-01-01"
+gh repo visualize stats --since "2024-01-01"
+
+# Filter commits until a specific date
+gh repo visualize --until "2024-12-31"
+
+# Combined date range
+gh repo visualize --since "2024-06-01" --until "2024-12-31"
+```
+
+### Export Data
+
+```bash
+# Export commit graph as CSV
+gh repo visualize -f csv -o commits.csv
+
+# Export commit graph as Markdown
+gh repo visualize -f markdown -o commits.md
+
+# Export commit graph as HTML
+gh repo visualize -f html -o commits.html
+
+# Export statistics
+gh repo visualize stats -f csv -o stats.csv
+```
+
 ## Flags
 
 ### `gh repo visualize`
@@ -99,7 +168,10 @@ gh repo visualize stats --no-color  # Disable colors
 | `--limit` | `-n` | Number of commits to display | `20` |
 | `--branch` | `-b` | Filter by branch | (all branches) |
 | `--author` | `-a` | Filter by author (case-insensitive) | (all authors) |
-| `--format` | `-f` | Output format: `ascii`, `compact`, `json` | `ascii` |
+| `--since` | | Show commits since this date (YYYY-MM-DD) | (all time) |
+| `--until` | | Show commits until this date (YYYY-MM-DD) | (all time) |
+| `--format` | `-f` | Output format: `ascii`, `compact`, `json`, `csv`, `markdown`, `html` | `ascii` |
+| `--output` | `-o` | Output file path for exports | (stdout) |
 | `--color` | | Enable colored output | auto-detect |
 | `--no-color` | | Disable colored output | auto-detect |
 
@@ -111,7 +183,32 @@ gh repo visualize stats --no-color  # Disable colors
 | `--by-day` | | Show breakdown by day | `false` |
 | `--branch` | `-b` | Filter by branch | (all branches) |
 | `--author` | `-a` | Filter by author (case-insensitive) | (all authors) |
+| `--since` | | Show commits since this date (YYYY-MM-DD) | (all time) |
+| `--until` | | Show commits until this date (YYYY-MM-DD) | (all time) |
+| `--format` | `-f` | Output format: `ascii`, `json`, `csv` | `ascii` |
+| `--output` | `-o` | Output file path for exports | (stdout) |
+| `--color` | | Enable colored output | auto-detect |
+| `--no-color` | | Disable colored output | auto-detect |
+
+### `gh repo visualize branch`
+
+| Flag | Alias | Description | Default |
+|------|-------|-------------|---------|
+| `--all` | `-a` | Show all branches (local and remote) | `false` |
+| `--merged` | | Show only merged branches | `false` |
+| `--unmerged` | | Show only unmerged branches | `false` |
 | `--format` | `-f` | Output format: `ascii`, `json` | `ascii` |
+| `--color` | | Enable colored output | auto-detect |
+| `--no-color` | | Disable colored output | auto-detect |
+
+### `gh repo visualize leaderboard` / `gh repo visualize top`
+
+| Flag | Alias | Description | Default |
+|------|-------|-------------|---------|
+| `--limit` | `-n` | Number of contributors to display | `10` |
+| `--since` | | Show commits since this date (YYYY-MM-DD) | (all time) |
+| `--until` | | Show commits until this date (YYYY-MM-DD) | (all time) |
+| `--format` | `-f` | Output format: `ascii`, `compact`, `json` | `ascii` |
 | `--color` | | Enable colored output | auto-detect |
 | `--no-color` | | Disable colored output | auto-detect |
 
@@ -151,6 +248,33 @@ gh repo visualize stats --no-color  # Disable colors
 │   Jane Smith                 45 commits (28.8%)
 │   ██████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 ╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
+### Branch Graph Output
+
+```
+╭────────────────────────────────────────────────────────╮
+│                    Branch Visualization                 │
+├────────────────────────────────────────────────────────┤
+│ ● main        (HEAD) - 7 commits ahead, 2 behind      │
+│   ↳ feature/auth    - 3 commits ahead                 │
+│   ↳ feature/api     - 5 commits ahead                 │
+│   ↳ bugfix/login    - merged into main                │
+╰────────────────────────────────────────────────────────╯
+```
+
+### Leaderboard Output
+
+```
+╭────────────────────────────────────────────────────────╮
+│              Top Contributors                           │
+├────────────────────────────────────────────────────────┤
+│   🥇 John Doe           156 commits   32.5%             │
+│   🥈 Jane Smith          98 commits   20.4%             │
+│   🥉 Bob Wilson          76 commits   15.8%             │
+│   4. Alice Brown         52 commits   10.8%             │
+│   5. Charlie Davis       45 commits   9.4%              │
+╰────────────────────────────────────────────────────────╯
 ```
 
 ### JSON Output
