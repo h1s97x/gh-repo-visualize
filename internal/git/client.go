@@ -104,9 +104,11 @@ func (c *Client) GetCommits(opts *LogOptions) ([]*models.Commit, error) {
 		args = append(args, opts.Branch)
 	}
 	
-	// Add author filter
+	// Add author filter (case-insensitive using Git regex)
 	if opts != nil && opts.Author != "" {
-		args = append(args, "--author="+opts.Author)
+		// Use Git regex to make author search case-insensitive
+		// (?i) prefix makes the pattern case-insensitive
+		args = append(args, "--author="+"(?i)"+opts.Author)
 	}
 	
 	output, err := c.runGit(args...)
