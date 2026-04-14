@@ -17,9 +17,9 @@
 
 - 📊 **Commit Graph Visualization** - Display Git commit history as ASCII art
 - 📈 **Commit Statistics** - Analyze commit patterns by author, day, and time
-- 🎨 **Multiple Output Formats** - ASCII, compact, and JSON formats
-- 🔍 **Flexible Filtering** - Filter by branch, author, or limit count
-- ⚡ **Fast and Lightweight** - Pure Go implementation with no dependencies
+- 🎨 **Terminal Colors** - Rich color output with multiple color schemes
+- 🔍 **Flexible Filtering** - Filter by branch, author, or limit count (case-insensitive)
+- ⚡ **Fast and Lightweight** - Pure Go implementation
 
 ## Installation
 
@@ -64,6 +64,10 @@ gh repo visualize -a "John Doe"
 gh repo visualize -f json     # JSON format
 gh repo visualize -f compact  # Compact one-line format
 gh repo visualize -f ascii    # ASCII art (default)
+
+# Color output (auto-detected in terminal)
+gh repo visualize --color     # Force enable colors
+gh repo visualize --no-color  # Disable colors
 ```
 
 ### Show Commit Statistics
@@ -80,6 +84,10 @@ gh repo visualize stats --by-day
 
 # Output as JSON
 gh repo visualize stats -f json
+
+# Color output
+gh repo visualize stats --color     # Force enable colors
+gh repo visualize stats --no-color  # Disable colors
 ```
 
 ## Flags
@@ -90,8 +98,10 @@ gh repo visualize stats -f json
 |------|-------|-------------|---------|
 | `--limit` | `-n` | Number of commits to display | `20` |
 | `--branch` | `-b` | Filter by branch | (all branches) |
-| `--author` | `-a` | Filter by author | (all authors) |
+| `--author` | `-a` | Filter by author (case-insensitive) | (all authors) |
 | `--format` | `-f` | Output format: `ascii`, `compact`, `json` | `ascii` |
+| `--color` | | Enable colored output | auto-detect |
+| `--no-color` | | Disable colored output | auto-detect |
 
 ### `gh repo visualize stats`
 
@@ -100,8 +110,10 @@ gh repo visualize stats -f json
 | `--by-author` | | Show breakdown by author | `false` |
 | `--by-day` | | Show breakdown by day | `false` |
 | `--branch` | `-b` | Filter by branch | (all branches) |
-| `--author` | `-a` | Filter by author | (all authors) |
+| `--author` | `-a` | Filter by author (case-insensitive) | (all authors) |
 | `--format` | `-f` | Output format: `ascii`, `json` | `ascii` |
+| `--color` | | Enable colored output | auto-detect |
+| `--no-color` | | Disable colored output | auto-detect |
 
 ## Examples
 
@@ -198,6 +210,15 @@ gh-repo-visualize/
 ├── Makefile
 └── README.md
 ```
+
+## Roadmap / Planned Features
+
+We're always looking to improve! Check out our planned features:
+
+- [#5](https://github.com/h1s97x/gh-repo-visualize/issues/5) - Branch graph visualization
+- [#6](https://github.com/h1s97x/gh-repo-visualize/issues/6) - Date range filtering (--since/--until)
+- [#7](https://github.com/h1s97x/gh-repo-visualize/issues/7) - Export to CSV, Markdown, HTML
+- [#8](https://github.com/h1s97x/gh-repo-visualize/issues/8) - Contributor leaderboard
 
 ## Contributing
 
