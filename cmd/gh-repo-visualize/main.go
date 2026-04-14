@@ -57,6 +57,14 @@ Examples:
 				Flags:       flags.BranchFlags(),
 				Action:      internal_cmd.Branch,
 			},
+			{
+				Name:        "leaderboard",
+				Aliases:     []string{"top"},
+				Usage:       "Display contributor leaderboard",
+				Description: "Shows top contributors ranked by commit count.",
+				Flags:       flags.LeaderboardFlags(),
+				Action:      internal_cmd.Leaderboard,
+			},
 		},
 	}
 

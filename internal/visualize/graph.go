@@ -13,7 +13,8 @@ type RenderOptions struct {
 	Format    string // "ascii", "json", "dot"
 	Width     int
 	ShowGraph bool
-	Color     bool // Enable color output
+	Color     bool   // Enable color output
+	Limit     int    // Limit for leaderboard, etc.
 }
 
 // GraphRenderer renders commit graphs
