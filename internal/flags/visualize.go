@@ -24,6 +24,16 @@ func VisualizeFlags() []cli.Flag {
 			Value:   "",
 		},
 		&cli.StringFlag{
+			Name:    "since",
+			Usage:   "Show commits since this date (ISO 8601 or relative like '2 weeks ago')",
+			Value:   "",
+		},
+		&cli.StringFlag{
+			Name:    "until",
+			Usage:   "Show commits until this date (ISO 8601 or relative like 'yesterday')",
+			Value:   "",
+		},
+		&cli.StringFlag{
 			Name:    "format",
 			Aliases: []string{"f"},
 			Usage:   "Output format: ascii, compact, json",
