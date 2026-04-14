@@ -36,7 +36,7 @@ func VisualizeFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:    "format",
 			Aliases: []string{"f"},
-			Usage:   "Output format: ascii, compact, json",
+			Usage:   "Output format: ascii, compact, json, csv, markdown, html",
 			Value:   "ascii",
 		},
 		&cli.BoolFlag{

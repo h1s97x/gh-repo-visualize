@@ -13,8 +13,8 @@ import (
 // Stats handles the stats command
 func Stats(c *cli.Context) error {
 	// Get flags
-	byAuthor := c.Bool("by-author")
-	byDay := c.Bool("by-day")
+	showByAuthor := c.Bool("by-author")
+	showByDay := c.Bool("by-day")
 	branch := c.String("branch")
 	author := c.String("author")
 	since := c.String("since")
@@ -70,20 +70,21 @@ func Stats(c *cli.Context) error {
 
 	if format == "json" {
 		fmt.Println(renderer.RenderJSON(stats))
-		return nil
-	}
-
-	// Default summary
-	fmt.Println(renderer.Render(stats))
-
-	// By author breakdown
-	if byAuthor || (!byAuthor && !byDay) {
-		fmt.Println(renderer.RenderByAuthor(stats))
-	}
-
-	// By day breakdown
-	if byDay || (!byAuthor && !byDay) {
-		fmt.Println(renderer.RenderByDay(stats))
+	} else if format == "csv" {
+		fmt.Println(renderer.RenderCSV(stats))
+	} else if format == "markdown" || format == "md" {
+		fmt.Println(renderer.RenderMarkdown(stats))
+	} else if format == "html" {
+		fmt.Println(renderer.RenderHTML(stats))
+	} else {
+		// Default ASCII - show by-author and by-day sections
+		fmt.Println(renderer.Render(stats))
+		if showByAuthor || (!showByAuthor && !showByDay) {
+			fmt.Println(renderer.RenderByAuthor(stats))
+		}
+		if showByDay || (!showByAuthor && !showByDay) {
+			fmt.Println(renderer.RenderByDay(stats))
+		}
 	}
 
 	return nil

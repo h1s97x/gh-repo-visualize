@@ -72,6 +72,12 @@ func Visualize(c *cli.Context) error {
 		fmt.Println(renderer.RenderJSON(commits))
 	case "compact":
 		fmt.Println(renderer.RenderCompact(commits))
+	case "csv":
+		fmt.Println(renderer.RenderCSV(commits))
+	case "markdown", "md":
+		fmt.Println(renderer.RenderMarkdown(commits))
+	case "html":
+		fmt.Println(renderer.RenderHTML(commits))
 	default:
 		fmt.Println(renderer.Render(commits))
 	}
