@@ -4,7 +4,6 @@
 before:
   hooks:
     - go mod tidy
-    - go generate ./...
 
 builds:
   - env:
@@ -41,7 +40,6 @@ changelog:
       - '^docs:'
       - '^test:'
       - '^ci:'
-      - typo
 
 release:
   github:
