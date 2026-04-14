@@ -40,7 +40,7 @@ func StatsFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:    "format",
 			Aliases: []string{"f"},
-			Usage:   "Output format: ascii, json",
+			Usage:   "Output format: ascii, json, csv, markdown, html",
 			Value:   "ascii",
 		},
 	}

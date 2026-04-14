@@ -163,6 +163,143 @@ func (r *GraphRenderer) RenderJSON(commits []*models.Commit) string {
 	return sb.String()
 }
 
+// RenderCSV renders commits as CSV format
+func (r *GraphRenderer) RenderCSV(commits []*models.Commit) string {
+	var sb strings.Builder
+	
+	// Header
+	sb.WriteString("Hash,ShortHash,Author,Email,Date,Message,Parents\n")
+	
+	for _, commit := range commits {
+		parents := strings.Join(commit.Parents, ";")
+		sb.WriteString(fmt.Sprintf("%s,%s,%s,%s,%s,\"%s\",%s\n",
+			commit.Hash,
+			commit.ShortHash,
+			escapeCSV(commit.Author),
+			escapeCSV(commit.Email),
+			commit.Date.Format("2006-01-02 15:04:05"),
+			escapeCSV(commit.Message),
+			parents,
+		))
+	}
+	
+	return sb.String()
+}
+
+// RenderMarkdown renders commits as Markdown table
+func (r *GraphRenderer) RenderMarkdown(commits []*models.Commit) string {
+	var sb strings.Builder
+	
+	// Title
+	sb.WriteString("# Commit History\n\n")
+	
+	// Summary
+	sb.WriteString(fmt.Sprintf("**Total Commits:** %d\n\n", len(commits)))
+	
+	// Table header
+	sb.WriteString("| Commit | Author | Date | Message |\n")
+	sb.WriteString("|--------|--------|------|--------|\n")
+	
+	// Table rows
+	for _, commit := range commits {
+		shortMsg := models.TruncateMessage(commit.Message, 50)
+		sb.WriteString(fmt.Sprintf("| `%s` | %s | %s | %s |\n",
+			commit.ShortHash,
+			escapeMarkdown(commit.Author),
+			commit.Date.Format("2006-01-02"),
+			escapeMarkdown(shortMsg),
+		))
+	}
+	
+	return sb.String()
+}
+
+// RenderHTML renders commits as HTML table
+func (r *GraphRenderer) RenderHTML(commits []*models.Commit) string {
+	var sb strings.Builder
+	
+	sb.WriteString(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commit History</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+th { background-color: #f4f4f4; }
+tr:nth-child(even) { background-color: #fafafa; }
+.commit { font-family: monospace; color: #0366d6; }
+.message { max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+<h1>Commit History</h1>
+<p><strong>Total Commits:</strong> `)
+	sb.WriteString(fmt.Sprintf("%d", len(commits)))
+	sb.WriteString(`</p>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Author</th>
+<th>Date</th>
+<th>Message</th>
+</tr>
+</thead>
+<tbody>
+`)
+	
+	for _, commit := range commits {
+		shortMsg := models.TruncateMessage(commit.Message, 60)
+		sb.WriteString(fmt.Sprintf(`<tr>
+<td class="commit">%s</td>
+<td>%s</td>
+<td>%s</td>
+<td class="message" title="%s">%s</td>
+</tr>
+`,
+			commit.ShortHash,
+			escapeHTML(commit.Author),
+			commit.Date.Format("2006-01-02"),
+			escapeHTML(commit.Message),
+			escapeHTML(shortMsg),
+		))
+	}
+	
+	sb.WriteString(`</tbody>
+</table>
+</body>
+</html>
+`)
+	
+	return sb.String()
+}
+
+// escapeCSV escapes a string for CSV output
+func escapeCSV(s string) string {
+	s = strings.ReplaceAll(s, "\"", "\"\"")
+	s = strings.ReplaceAll(s, "\n", " ")
+	return s
+}
+
+// escapeMarkdown escapes a string for Markdown output
+func escapeMarkdown(s string) string {
+	s = strings.ReplaceAll(s, "|", "\\|")
+	s = strings.ReplaceAll(s, "\n", " ")
+	return s
+}
+
+// escapeHTML escapes a string for HTML output
+func escapeHTML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	return s
+}
+
 // Helper functions
 func truncate(s string, maxLen int) string {
 	s = strings.TrimSpace(s)
