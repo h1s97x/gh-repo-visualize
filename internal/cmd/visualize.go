@@ -15,6 +15,8 @@ func Visualize(c *cli.Context) error {
 	limit := c.Int("limit")
 	branch := c.String("branch")
 	author := c.String("author")
+	since := c.String("since")
+	until := c.String("until")
 	format := c.String("format")
 	enableColor := c.Bool("color")
 	disableColor := c.Bool("no-color")
@@ -44,6 +46,8 @@ func Visualize(c *cli.Context) error {
 		Limit:  limit,
 		Branch: branch,
 		Author: author,
+		Since:  since,
+		Until:  until,
 	}
 
 	commits, err := client.GetCommits(opts)

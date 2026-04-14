@@ -111,6 +111,14 @@ func (c *Client) GetCommits(opts *LogOptions) ([]*models.Commit, error) {
 		args = append(args, "--author="+"(?i)"+opts.Author)
 	}
 	
+	// Add date range filters
+	if opts != nil && opts.Since != "" {
+		args = append(args, "--since="+opts.Since)
+	}
+	if opts != nil && opts.Until != "" {
+		args = append(args, "--until="+opts.Until)
+	}
+	
 	output, err := c.runGit(args...)
 	if err != nil {
 		return nil, err

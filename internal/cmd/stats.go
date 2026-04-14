@@ -17,6 +17,8 @@ func Stats(c *cli.Context) error {
 	byDay := c.Bool("by-day")
 	branch := c.String("branch")
 	author := c.String("author")
+	since := c.String("since")
+	until := c.String("until")
 	format := c.String("format")
 	enableColor := c.Bool("color")
 	disableColor := c.Bool("no-color")
@@ -45,6 +47,8 @@ func Stats(c *cli.Context) error {
 		Limit:  0, // No limit for stats
 		Branch: branch,
 		Author: author,
+		Since:  since,
+		Until:  until,
 	}
 
 	commits, err := client.GetCommits(opts)
