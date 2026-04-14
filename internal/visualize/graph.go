@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/h1s97x/gh-repo-visualize/internal/models"
 )
 
@@ -12,11 +13,13 @@ type RenderOptions struct {
 	Format    string // "ascii", "json", "dot"
 	Width     int
 	ShowGraph bool
+	Color     bool // Enable color output
 }
 
 // GraphRenderer renders commit graphs
 type GraphRenderer struct {
 	options RenderOptions
+	colors  *ColorScheme
 }
 
 // NewGraphRenderer creates a new graph renderer
@@ -24,7 +27,8 @@ func NewGraphRenderer(opts RenderOptions) *GraphRenderer {
 	if opts.Width == 0 {
 		opts.Width = 80
 	}
-	return &GraphRenderer{options: opts}
+	colors := NewColorScheme(opts.Color)
+	return &GraphRenderer{options: opts, colors: colors}
 }
 
 // Render renders a commit list as ASCII graph
@@ -37,11 +41,18 @@ func (r *GraphRenderer) Render(commits []*models.Commit) string {
 	width := r.options.Width
 
 	// Header
-	sb.WriteString("╭" + strings.Repeat("─", width-2) + "╮\n")
+	border := r.colors.Border.Render("╭") + strings.Repeat("─", width-2) + r.colors.Border.Render("╮")
+	sb.WriteString(border + "\n")
+	
 	header := fmt.Sprintf("│ %-10s %-8s %-15s %-12s %s",
 		"Commit", "Author", "", "Date", "Message")
+	if r.colors.Enabled {
+		header = r.colors.Header.Render(header)
+	}
 	sb.WriteString(padRight(header, width) + "│\n")
-	sb.WriteString("├" + strings.Repeat("─", width-2) + "┤\n")
+	
+	borderMid := r.colors.Border.Render("├") + strings.Repeat("─", width-2) + r.colors.Border.Render("┤")
+	sb.WriteString(borderMid + "\n")
 
 	// Commits
 	for _, commit := range commits {
@@ -60,29 +71,44 @@ func (r *GraphRenderer) Render(commits []*models.Commit) string {
 					parentShortHashes[i] = p
 				}
 			}
-			mergeInfo := fmt.Sprintf("│   └─ Merge: %s", strings.Join(parentShortHashes, ", "))
+			mergeStyle := r.colors.Merge
+			if !r.colors.Enabled {
+				mergeStyle = lipgloss.NewStyle()
+			}
+			mergeInfo := "│   " + mergeStyle.Render("└─ Merge: ") + strings.Join(parentShortHashes, ", ")
 			sb.WriteString(padRight(mergeInfo, width) + "│\n")
 		}
 	}
 
 	// Footer
-	sb.WriteString("╰" + strings.Repeat("─", width-2) + "╯\n")
+	borderBottom := r.colors.Border.Render("╰") + strings.Repeat("─", width-2) + r.colors.Border.Render("╯")
+	sb.WriteString(borderBottom + "\n")
 
 	return sb.String()
 }
 
 // renderLine renders a single commit line
 func (r *GraphRenderer) renderLine(commit *models.Commit) string {
-	// Graph characters: │ ╭ ╮ ╰ ╯ ├ ┤ ┬ ┴ ┼ ─ • ○ ● ★
-	graph := "●" // Current commit
+	// Graph characters with color
+	graph := "●"
+	if r.colors.Enabled {
+		graph = r.colors.Feat.Render("●")
+	}
 	
 	// Format: graph short_hash author date message
 	msg := models.TruncateMessage(commit.Message, 30)
+	msg = r.colors.GetCommitStyle(commit.Message).Render(msg)
+	
+	hashStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#22C55E"))
+	if r.colors.Enabled {
+		hashStyle = hashStyle.Bold(true)
+	}
+	
 	return fmt.Sprintf("%s %s %-15s %s %s",
 		graph,
-		commit.ShortHash,
-		truncate(commit.Author, 15),
-		commit.Date.Format("2006-01-02"),
+		hashStyle.Render(commit.ShortHash),
+		r.colors.Meta.Render(truncate(commit.Author, 15)),
+		r.colors.Meta.Render(commit.Date.Format("2006-01-02")),
 		msg,
 	)
 }
@@ -96,18 +122,19 @@ func (r *GraphRenderer) RenderCompact(commits []*models.Commit) string {
 	var sb strings.Builder
 	
 	for _, commit := range commits {
+		msg := r.colors.GetCommitStyle(commit.Message).Render(models.TruncateMessage(commit.Message, 40))
 		sb.WriteString(fmt.Sprintf("%s %s %s %s\n",
 			commit.ShortHash,
 			commit.Date.Format("2006-01-02"),
 			truncate(commit.Author, 12),
-			models.TruncateMessage(commit.Message, 40),
+			msg,
 		))
 	}
 	
 	return sb.String()
 }
 
-// RenderJSON renders as JSON
+// RenderJSON renders as JSON (no colors)
 func (r *GraphRenderer) RenderJSON(commits []*models.Commit) string {
 	var sb strings.Builder
 	sb.WriteString("[\n")
@@ -146,10 +173,13 @@ func truncate(s string, maxLen int) string {
 }
 
 func padRight(s string, width int) string {
-	if len(s) >= width-1 {
-		return s[:width-1]
+	// Strip ANSI codes for length calculation
+	clean := stripANSI(s)
+	if len(clean) >= width-1 {
+		return s
 	}
-	return s + strings.Repeat(" ", width-1-len(s))
+	padding := width - 1 - len(clean)
+	return s + strings.Repeat(" ", padding)
 }
 
 func escapeJSON(s string) string {
@@ -157,4 +187,24 @@ func escapeJSON(s string) string {
 	s = strings.ReplaceAll(s, "\"", "\\\"")
 	s = strings.ReplaceAll(s, "\t", "\\t")
 	return s
+}
+
+// stripANSI removes ANSI escape codes from a string
+func stripANSI(s string) string {
+	var result strings.Builder
+	inANSI := false
+	for _, r := range s {
+		if r == '\x1b' {
+			inANSI = true
+			continue
+		}
+		if inANSI && r == 'm' {
+			inANSI = false
+			continue
+		}
+		if !inANSI {
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
 }
