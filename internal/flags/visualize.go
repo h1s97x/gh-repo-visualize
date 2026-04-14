@@ -29,5 +29,15 @@ func VisualizeFlags() []cli.Flag {
 			Usage:   "Output format: ascii, compact, json",
 			Value:   "ascii",
 		},
+		&cli.BoolFlag{
+			Name:  "color",
+			Usage: "Force enable color output",
+			Value: false,
+		},
+		&cli.BoolFlag{
+			Name:  "no-color",
+			Usage: "Force disable color output (for pipe redirection)",
+			Value: false,
+		},
 	}
 }

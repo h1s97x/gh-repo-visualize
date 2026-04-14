@@ -5,17 +5,24 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/h1s97x/gh-repo-visualize/internal/models"
 )
 
 // StatsRenderer renders commit statistics
 type StatsRenderer struct {
-	width int
+	width  int
+	colors *ColorScheme
 }
 
 // NewStatsRenderer creates a new stats renderer
 func NewStatsRenderer() *StatsRenderer {
-	return &StatsRenderer{width: 80}
+	return &StatsRenderer{width: 80, colors: NewColorScheme(false)}
+}
+
+// NewStatsRendererWithColor creates a new stats renderer with color support
+func NewStatsRendererWithColor(color bool) *StatsRenderer {
+	return &StatsRenderer{width: 80, colors: NewColorScheme(color)}
 }
 
 // Render renders statistics as ASCII table
@@ -24,26 +31,35 @@ func (r *StatsRenderer) Render(stats *models.Stats) string {
 	width := r.width
 
 	// Header
-	sb.WriteString("╭" + strings.Repeat("─", width-2) + "╮\n")
-	sb.WriteString(fmt.Sprintf("│ %-76s │\n", "Commit Statistics"))
-	sb.WriteString("├" + strings.Repeat("─", width-2) + "┤\n")
+	borderTop := r.colors.Border.Render("╭") + strings.Repeat("─", width-2) + r.colors.Border.Render("╮")
+	sb.WriteString(borderTop + "\n")
+	
+	title := r.colors.Header.Render("Commit Statistics")
+	sb.WriteString(fmt.Sprintf("│ %-76s │\n", title))
+	
+	borderMid := r.colors.Border.Render("├") + strings.Repeat("─", width-2) + r.colors.Border.Render("┤")
+	sb.WriteString(borderMid + "\n")
 
 	// Summary
-	sb.WriteString(fmt.Sprintf("│ Total Commits: %-63d │\n", stats.TotalCommits))
+	totalCommits := r.colors.Feat.Render(fmt.Sprintf("%d", stats.TotalCommits))
+	sb.WriteString(fmt.Sprintf("│ Total Commits: %-63s │\n", totalCommits))
 	
 	if stats.DateRange != nil {
-		sb.WriteString(fmt.Sprintf("│ Date Range: %-66s │\n", 
-			stats.DateRange.Start+" to "+stats.DateRange.End))
-		sb.WriteString(fmt.Sprintf("│ Avg Commits/Day: %-59.1f │\n", stats.AvgPerDay))
+		dateRange := r.colors.Meta.Render(stats.DateRange.Start + " to " + stats.DateRange.End)
+		sb.WriteString(fmt.Sprintf("│ Date Range: %-66s │\n", dateRange))
+		avg := r.colors.Meta.Render(fmt.Sprintf("%.1f", stats.AvgPerDay))
+		sb.WriteString(fmt.Sprintf("│ Avg Commits/Day: %-59s │\n", avg))
 	}
 	
 	if stats.MostActiveDay != "" {
-		sb.WriteString(fmt.Sprintf("│ Most Active Day: %-60s │\n", stats.MostActiveDay))
+		day := r.colors.Meta.Render(stats.MostActiveDay)
+		sb.WriteString(fmt.Sprintf("│ Most Active Day: %-60s │\n", day))
 	}
 	
-	sb.WriteString(fmt.Sprintf("│ Most Active Hour: %02d:00%-56s │\n", stats.MostActiveHour, ""))
+	hour := r.colors.Meta.Render(fmt.Sprintf("%02d:00", stats.MostActiveHour))
+	sb.WriteString(fmt.Sprintf("│ Most Active Hour: %-59s │\n", hour))
 
-	sb.WriteString("├" + strings.Repeat("─", width-2) + "┤\n")
+	sb.WriteString(borderMid + "\n")
 
 	return sb.String()
 }
@@ -54,9 +70,14 @@ func (r *StatsRenderer) RenderByAuthor(stats *models.Stats) string {
 	width := r.width
 
 	// Header
-	sb.WriteString("╭" + strings.Repeat("─", width-2) + "╮\n")
-	sb.WriteString(fmt.Sprintf("│ %-76s │\n", "Commits by Author"))
-	sb.WriteString("├" + strings.Repeat("─", width-2) + "┤\n")
+	borderTop := r.colors.Border.Render("╭") + strings.Repeat("─", width-2) + r.colors.Border.Render("╮")
+	sb.WriteString(borderTop + "\n")
+	
+	title := r.colors.Header.Render("Commits by Author")
+	sb.WriteString(fmt.Sprintf("│ %-76s │\n", title))
+	
+	borderMid := r.colors.Border.Render("├") + strings.Repeat("─", width-2) + r.colors.Border.Render("┤")
+	sb.WriteString(borderMid + "\n")
 
 	// Sort authors by commits
 	authors := make([]*models.AuthorStats, len(stats.Authors))
@@ -66,18 +87,19 @@ func (r *StatsRenderer) RenderByAuthor(stats *models.Stats) string {
 	})
 
 	for _, author := range authors {
-		line := fmt.Sprintf("  %-25s %5d commits (%s)", 
-			truncate(author.Name, 25), 
-			author.Commits, 
-			author.Percent)
+		name := r.colors.Feat.Render(truncate(author.Name, 25))
+		count := r.colors.Fix.Render(fmt.Sprintf("%5d", author.Commits))
+		percent := r.colors.Meta.Render(author.Percent)
+		line := fmt.Sprintf("  %s %s commits (%s)", name, count, percent)
 		sb.WriteString(fmt.Sprintf("│%-78s│\n", line))
 		
 		// Bar chart
-		bar := r.renderBar(author.Commits, stats.TotalCommits, 50)
+		bar := r.colors.RenderBar(author.Commits, stats.TotalCommits, 50)
 		sb.WriteString(fmt.Sprintf("│   %-74s│\n", bar))
 	}
 
-	sb.WriteString("╰" + strings.Repeat("─", width-2) + "╯\n")
+	borderBottom := r.colors.Border.Render("╰") + strings.Repeat("─", width-2) + r.colors.Border.Render("╯")
+	sb.WriteString(borderBottom + "\n")
 
 	return sb.String()
 }
@@ -88,9 +110,14 @@ func (r *StatsRenderer) RenderByDay(stats *models.Stats) string {
 	width := r.width
 
 	// Header
-	sb.WriteString("╭" + strings.Repeat("─", width-2) + "╮\n")
-	sb.WriteString(fmt.Sprintf("│ %-76s │\n", "Commits by Day"))
-	sb.WriteString("├" + strings.Repeat("─", width-2) + "┤\n")
+	borderTop := r.colors.Border.Render("╭") + strings.Repeat("─", width-2) + r.colors.Border.Render("╮")
+	sb.WriteString(borderTop + "\n")
+	
+	title := r.colors.Header.Render("Commits by Day")
+	sb.WriteString(fmt.Sprintf("│ %-76s │\n", title))
+	
+	borderMid := r.colors.Border.Render("├") + strings.Repeat("─", width-2) + r.colors.Border.Render("┤")
+	sb.WriteString(borderMid + "\n")
 
 	// Sort dates
 	dates := make([]string, 0, len(stats.ByDate))
@@ -106,25 +133,29 @@ func (r *StatsRenderer) RenderByDay(stats *models.Stats) string {
 	}
 
 	maxCommits := 0
-	for date, count := range stats.ByDate {
-		if date >= dates[start] && count > maxCommits {
-			maxCommits = count
+	for _, date := range dates[start:] {
+		if stats.ByDate[date] > maxCommits {
+			maxCommits = stats.ByDate[date]
 		}
 	}
 
 	for i := start; i < len(dates); i++ {
 		date := dates[i]
 		count := stats.ByDate[date]
-		line := fmt.Sprintf("  %s %5d %s", date, count, r.renderSimpleBar(count, maxCommits, 30))
+		dateStr := r.colors.Meta.Render(date)
+		countStr := r.colors.Fix.Render(fmt.Sprintf("%5d", count))
+		bar := r.colors.RenderBar(count, maxCommits, 30)
+		line := fmt.Sprintf("  %s %s %s", dateStr, countStr, bar)
 		sb.WriteString(fmt.Sprintf("│%-78s│\n", line))
 	}
 
-	sb.WriteString("╰" + strings.Repeat("─", width-2) + "╯\n")
+	borderBottom := r.colors.Border.Render("╰") + strings.Repeat("─", width-2) + r.colors.Border.Render("╯")
+	sb.WriteString(borderBottom + "\n")
 
 	return sb.String()
 }
 
-// RenderJSON renders statistics as JSON
+// RenderJSON renders statistics as JSON (no colors)
 func (r *StatsRenderer) RenderJSON(stats *models.Stats) string {
 	var sb strings.Builder
 	
@@ -153,26 +184,4 @@ func (r *StatsRenderer) RenderJSON(stats *models.Stats) string {
 	
 	sb.WriteString("}\n")
 	return sb.String()
-}
-
-// renderBar renders a bar chart
-func (r *StatsRenderer) renderBar(value, total, width int) string {
-	if total == 0 {
-		return ""
-	}
-	
-	filled := value * width / total
-	bar := strings.Repeat("█", filled)
-	bar += strings.Repeat("░", width-filled)
-	return bar
-}
-
-// renderSimpleBar renders a simple bar
-func (r *StatsRenderer) renderSimpleBar(value, max, width int) string {
-	if max == 0 {
-		return ""
-	}
-	
-	filled := value * width / max
-	return strings.Repeat("▓", filled) + strings.Repeat("░", width-filled)
 }

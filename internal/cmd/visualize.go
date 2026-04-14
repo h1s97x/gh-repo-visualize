@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/urfave/cli/v2"
 
@@ -16,6 +17,20 @@ func Visualize(c *cli.Context) error {
 	branch := c.String("branch")
 	author := c.String("author")
 	format := c.String("format")
+	enableColor := c.Bool("color")
+	disableColor := c.Bool("no-color")
+
+	// Determine color setting
+	// Priority: --no-color > --color > auto-detect TTY
+	colorEnabled := false
+	if disableColor {
+		colorEnabled = false
+	} else if enableColor {
+		colorEnabled = true
+	} else {
+		// Auto-detect: enable colors if stdout is a TTY
+		colorEnabled = isTTY()
+	}
 
 	// Create git client
 	client := git.NewClient("")
@@ -46,6 +61,7 @@ func Visualize(c *cli.Context) error {
 	renderer := visualize.NewGraphRenderer(visualize.RenderOptions{
 		Format: format,
 		Width:  80,
+		Color:  colorEnabled,
 	})
 
 	switch format {
@@ -58,4 +74,14 @@ func Visualize(c *cli.Context) error {
 	}
 
 	return nil
+}
+
+// isTTY checks if stdout is a terminal
+func isTTY() bool {
+	fileInfo, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	// Check if it's a character device (terminal)
+	return (fileInfo.Mode() & os.ModeCharDevice) != 0
 }
