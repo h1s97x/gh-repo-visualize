@@ -50,6 +50,13 @@ Examples:
 				Flags:       flags.StatsFlags(),
 				Action:      internal_cmd.Stats,
 			},
+			{
+				Name:        "branch",
+				Usage:       "Display branch graph",
+				Description: "Shows branch visualization including local and remote branches.",
+				Flags:       flags.BranchFlags(),
+				Action:      internal_cmd.Branch,
+			},
 		},
 	}
 
